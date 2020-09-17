@@ -9,7 +9,6 @@ public class DriveTrain {
     private WheelType wheelType;
     private DriveMotor[] motors;
 
-
     DriveTrain(WheelType wheelType, DcMotor leftMotor, DcMotor rightMotor){
         this.wheelType = wheelType;
         this.motors = new DriveMotor[]{new DriveMotor(leftMotor, WheelPosition.LEFT), new DriveMotor(rightMotor, WheelPosition.RIGHT)};
@@ -37,55 +36,84 @@ public class DriveTrain {
                                          backLeftMotor,   backRightMotor};
     }
 
-
     // Given an array of DcMotors and their motor positions reset drive train
     public void setMotors(DcMotor[] motors, WheelPosition[] motorPos) throws DriveTrainException {
-        // checks position requirements
-        checkValidPositions(motorPos);
 
-        // validates number of motors
-        if (motorPos.length == motors.length && (motors.length == 2 || motors.length == 4)) {
+        int numMotors = motors.length;
 
-            // iterates through and creates new drive motors
-            this.motors = new DriveMotor[motors.length];
-            for (int i = 0; i < motors.length; i++) {
-                this.motors[i] = new DriveMotor(motors[i], motorPos[i]);
-            }
-
-            // throws error for invalid motor count
-        } else {
-            throw new DriveTrainException("Invalid Motor count: only 2 or 4 motors per drive train is compatible, " + motors.length + " is detected");
+        if (numMotors != motorPos.length){
+            throw new DriveTrainException("setMotors must be passed two arrays of equal length");
         }
-    }
 
-    // Checks to see if there are any errors with wheel positions
-    protected void checkValidPositions(WheelPosition[] positions) throws DriveTrainException {
-        // make sure there are no 2 motors taking up the same space
-        if (ArrayTools.containsDuplicates(positions)){
+        if (numMotors != 2 && numMotors != 4){
+            throw new DriveTrainException("There must be either 2 or 4 motors in array");
+        }
+
+        // In case of 2 wheel drive, make sure all motors are 2 wheel
+        if (numMotors == 2){
+            for (int i = 0; i < 2; i++){
+                if (!is2Wheel(motorPos[i])){
+                    throw new DriveTrainException("4 wheel motor found in 2 wheel array");
+                }
+            }
+        }
+
+        // In case of 4 wheel drive, make sure all motors are 4 wheel
+        if (numMotors == 4){
+            for (int i = 0; i < 4; i++){
+                if (is2Wheel(motorPos[i])){
+                    throw new DriveTrainException("2 wheel motor found in 4 wheel array");
+                }
+            }
+        }
+
+        if (ArrayTools.containsDuplicates(motorPos)){
             throw new DriveTrainException("Invalid wheel positions: duplicate wheel positions detected");
         }
 
-        // checks to ensure that its either 2wheel or 4wheel
-        boolean two_wheel = positions[0] == WheelPosition.LEFT || positions[0] == WheelPosition.RIGHT;
-        for (int i = 1; i < positions.length; i++) {
-            if (!two_wheel && (positions[i] == WheelPosition.LEFT || positions[i] == WheelPosition.RIGHT)) {
-                throw new DriveTrainException("Invalid wheel positions: both 2 wheel and 4 wheel drive detected");
-            }
+        // At this point, all criteria have been satisfied
+        // Iterates through and creates new drive motors
+        this.motors = new DriveMotor[numMotors];
+        for (int i = 0; i < numMotors; i++){
+            this.motors[posIndex(motorPos[i])] = new DriveMotor(motors[i], motorPos[i]);
         }
 
     }
 
+    public boolean is2Wheel(WheelPosition pos){
+        return pos == WheelPosition.LEFT || pos == WheelPosition.RIGHT;
+    }
 
-    public void setPower(float x, float y) {
-        float frontRightDrivePow = Range.clip(x - y, -1, 1);
-        float backRightDrivePow = Range.clip(x - y, -1, 1);
-        float backLeftDrivePow = Range.clip(x + y, -1, 1);
-        float frontLeftDrivePow = Range.clip(x + y, -1, 1);
+    // Maps wheel positions to index of motors array
+    // LEFT, RIGHT: 0, 1
+    // FRONT_LEFT, FRONT_RIGHT, BACK_LEFT, BACK_RIGHT: 0, 1, 2, 3
+    public int posIndex(WheelPosition pos){
+        if (is2Wheel(pos)) {
+            return pos.ordinal();
+        }
+        return pos.ordinal()-2;
+    }
 
-        motors[0].motor.setPower(frontLeftDrivePow);
-        motors[1].motor.setPower(frontRightDrivePow);
-        motors[2].motor.setPower(backLeftDrivePow);
-        motors[3].motor.setPower(backRightDrivePow);
+    public void setPower(float x, float y) throws DriveTrainException {
+
+        if (this.motors.length == 2){
+            float leftDrivePow = Range.clip(x + y, -1, 1);
+            float rightDrivePow = Range.clip(x - y, -1, 1);
+            motors[0].motor.setPower(leftDrivePow);
+            motors[1].motor.setPower(rightDrivePow);
+        }
+
+        if (this.motors.length == 4) {
+            float frontLeftDrivePow = Range.clip(x + y, -1, 1);
+            float frontRightDrivePow = Range.clip(x - y, -1, 1);
+            float backLeftDrivePow = Range.clip(x + y, -1, 1);
+            float backRightDrivePow = Range.clip(x - y, -1, 1);
+            motors[0].motor.setPower(frontLeftDrivePow);
+            motors[1].motor.setPower(frontRightDrivePow);
+            motors[2].motor.setPower(backLeftDrivePow);
+            motors[3].motor.setPower(backRightDrivePow);
+        }
+
+        throw new DriveTrainException("this.motors must have either 2 or 4 members");
     }
 }
-

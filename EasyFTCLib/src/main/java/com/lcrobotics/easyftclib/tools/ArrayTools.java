@@ -4,6 +4,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class ArrayTools {
+
+    // Used to ensure that all wheels in a DriveTrain are in different positions
     public static <T extends Comparable<T>> boolean containsDuplicates(T[] array) {
         Set<T> dupes = new HashSet<T>();
         for (T i : array) {
