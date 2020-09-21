@@ -16,9 +16,9 @@ public class DriveTrain {
 
     // Creates a 4 wheel drive train
     public DriveTrain(WheelType wheelType, DcMotor frontLeftMotor, DcMotor frontRightMotor, DcMotor BackLeftMotor, DcMotor BackRightMotor){
-        // Stores what type of wheel (i.e mechanum, omni, etc
+        // Stores what type of wheel (i.e. mechanum, omni, etc.)
         this.wheelType = wheelType;
-        // stores the motors in our DriveMotor[], this allows us to know what they are attached to
+        // Stores the motors in our DriveMotor[] so we know what they are attached to
         this.motors = new DriveMotor[] {
                 new DriveMotor(frontLeftMotor, WheelPosition.FRONT_LEFT),
                 new DriveMotor(frontRightMotor, WheelPosition.FRONT_RIGHT),
@@ -28,15 +28,15 @@ public class DriveTrain {
     }
 
     public DriveTrain(WheelType wheelType, DriveMotor frontLeftMotor, DriveMotor frontRightMotor, DriveMotor backLeftMotor, DriveMotor backRightMotor){
-        // Stores what type of wheel (i.e mechanum, omni, etc
+        // Stores what type of wheel (i.e. mechanum, omni, etc.)
         this.wheelType = wheelType;
 
-        // stores the motors in our DriveMotor[], this allows us to know what they are attached to
+        // Stores the motors in our DriveMotor[] so we know what they are attached to
         this.motors = new DriveMotor[] { frontLeftMotor,  frontRightMotor,
                                          backLeftMotor,   backRightMotor};
     }
 
-    // Given an array of DcMotors and their motor positions reset drive train
+    // Given an array of DcMotors and their positions, reset drive train
     public void setMotors(DcMotor[] motors, WheelPosition[] motorPos) throws DriveTrainException {
 
         int numMotors = motors.length;
@@ -71,11 +71,13 @@ public class DriveTrain {
             throw new DriveTrainException("Invalid wheel positions: duplicate wheel positions detected");
         }
 
-        // At this point, all criteria have been satisfied
+        // At this point, all criteria have been satisfied:
+        //
         // Iterates through and creates new drive motors
         this.motors = new DriveMotor[numMotors];
         for (int i = 0; i < numMotors; i++){
-            this.motors[posIndex(motorPos[i])] = new DriveMotor(motors[i], motorPos[i]);
+            int newMotorIdx = posIndex(motorPos[i]);
+            this.motors[newMotorIdx] = new DriveMotor(motors[i], motorPos[i]);
         }
 
     }
@@ -84,36 +86,43 @@ public class DriveTrain {
         return pos == WheelPosition.LEFT || pos == WheelPosition.RIGHT;
     }
 
-    // Maps wheel positions to index of motors array
+    // Maps wheel positions to index of motors[]
     // LEFT, RIGHT: 0, 1
     // FRONT_LEFT, FRONT_RIGHT, BACK_LEFT, BACK_RIGHT: 0, 1, 2, 3
     public int posIndex(WheelPosition pos){
-        if (is2Wheel(pos)) {
-            return pos.ordinal();
+        switch (pos){
+            case LEFT:
+            case FRONT_LEFT:
+                return 0;
+            case RIGHT:
+            case FRONT_RIGHT:
+                return 1;
+            case BACK_LEFT:
+                return 2;
+            default: // BACK_RIGHT
+                return 3;
         }
-        return pos.ordinal()-2;
     }
 
-    public void setPower(float x, float y) throws DriveTrainException {
+    public void setPower(float x, float y){
 
+        // 2 wheel case
         if (this.motors.length == 2){
             float leftDrivePow = Range.clip(x + y, -1, 1);
             float rightDrivePow = Range.clip(x - y, -1, 1);
             motors[0].motor.setPower(leftDrivePow);
             motors[1].motor.setPower(rightDrivePow);
+            return;
         }
 
-        if (this.motors.length == 4) {
-            float frontLeftDrivePow = Range.clip(x + y, -1, 1);
-            float frontRightDrivePow = Range.clip(x - y, -1, 1);
-            float backLeftDrivePow = Range.clip(x + y, -1, 1);
-            float backRightDrivePow = Range.clip(x - y, -1, 1);
-            motors[0].motor.setPower(frontLeftDrivePow);
-            motors[1].motor.setPower(frontRightDrivePow);
-            motors[2].motor.setPower(backLeftDrivePow);
-            motors[3].motor.setPower(backRightDrivePow);
-        }
-
-        throw new DriveTrainException("this.motors must have either 2 or 4 members");
+        // 4 wheel case
+        float frontLeftDrivePow = Range.clip(x + y, -1, 1);
+        float frontRightDrivePow = Range.clip(x - y, -1, 1);
+        float backLeftDrivePow = Range.clip(x + y, -1, 1);
+        float backRightDrivePow = Range.clip(x - y, -1, 1);
+        motors[0].motor.setPower(frontLeftDrivePow);
+        motors[1].motor.setPower(frontRightDrivePow);
+        motors[2].motor.setPower(backLeftDrivePow);
+        motors[3].motor.setPower(backRightDrivePow);
     }
 }
